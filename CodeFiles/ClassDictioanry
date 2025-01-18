@@ -1,0 +1,160 @@
+from odoo import models, fields, api
+
+# ParametrosHorarioLaboral
+class ParametrosHorarioLaboral(models.Model):
+    _name = 'parametros.horario.laboral'
+    _description = 'Parametros Horario Laboral'
+
+    codigo_dia_semana = fields.Integer(string='Codigo Dia Semana', required=True)
+    hora_desde = fields.Float(string='Hora Desde', required=True)
+    hora_hasta = fields.Float(string='Hora Hasta', required=True)
+
+    @api.model
+    def save_record(self, codigo_dia_semana, hora_desde, hora_hasta):
+        return self.create({
+            'codigo_dia_semana': codigo_dia_semana,
+            'hora_desde': hora_desde,
+            'hora_hasta': hora_hasta
+        })
+
+
+# DiccionarioDiasSemana
+class DiccionarioDiasSemana(models.Model):
+    _name = 'diccionario.dias.semana'
+    _description = 'Diccionario Dias Semana'
+
+    codigo_dia_semana = fields.Integer(string='Codigo Dia Semana', required=True)
+    descripcion_dia_semana = fields.Char(string='Descripcion Dia Semana', size=50, required=True)
+
+    @api.model
+    def save_record(self, codigo_dia_semana, descripcion_dia_semana):
+        return self.create({
+            'codigo_dia_semana': codigo_dia_semana,
+            'descripcion_dia_semana': descripcion_dia_semana
+        })
+
+
+# Usuarios
+class Usuarios(models.Model):
+    _name = 'usuarios'
+    _description = 'Usuarios'
+
+    codigo_usuario = fields.Integer(string='Codigo Usuario', required=True)
+    nombre_usuario = fields.Char(string='Nombre Usuario', size=50, required=True)
+    contrasena = fields.Char(string='Contraseña (Codificado)', size=50, required=True)
+
+    @api.model
+    def save_record(self, codigo_usuario, nombre_usuario, contrasena):
+        return self.create({
+            'codigo_usuario': codigo_usuario,
+            'nombre_usuario': nombre_usuario,
+            'contrasena': contrasena
+        })
+
+
+# ParametrosCantidades
+class ParametrosCantidades(models.Model):
+    _name = 'parametros.cantidades'
+    _description = 'Parametros Cantidades'
+
+    codigo_nivel = fields.Integer(string='Codigo Nivel', required=True)
+    inicio_rango = fields.Float(string='Inicio Rango', required=True)
+    final_rango = fields.Float(string='Final Rango', required=True)
+
+    @api.model
+    def save_record(self, codigo_nivel, inicio_rango, final_rango):
+        return self.create({
+            'codigo_nivel': codigo_nivel,
+            'inicio_rango': inicio_rango,
+            'final_rango': final_rango
+        })
+
+
+# DiccionarioNivel
+class DiccionarioNivel(models.Model):
+    _name = 'diccionario.nivel'
+    _description = 'Diccionario Nivel'
+
+    codigo_nivel = fields.Integer(string='Codigo Nivel', required=True)
+    descripcion_nivel = fields.Char(string='Descripcion Nivel', size=60, required=True)
+    mensaje_nivel = fields.Char(string='Mensaje Nivel', size=100, required=True)
+
+    @api.model
+    def save_record(self, codigo_nivel, descripcion_nivel, mensaje_nivel):
+        return self.create({
+            'codigo_nivel': codigo_nivel,
+            'descripcion_nivel': descripcion_nivel,
+            'mensaje_nivel': mensaje_nivel
+        })
+
+
+# ParametrosLogin
+class ParametrosLogin(models.Model):
+    _name = 'parametros.login'
+    _description = 'Parametros Login'
+
+    numero_intentos = fields.Integer(string='Numero Intentos', required=True)
+    accion_cuenta = fields.Many2one('diccionario.acciones', string='Accion Cuenta', required=True)
+    mensaje = fields.Char(string='Mensaje', size=100, required=True)
+
+    @api.model
+    def save_record(self, numero_intentos, accion_cuenta, mensaje):
+        return self.create({
+            'numero_intentos': numero_intentos,
+            'accion_cuenta': accion_cuenta,
+            'mensaje': mensaje
+        })
+
+
+# DiccionarioAcciones
+class DiccionarioAcciones(models.Model):
+    _name = 'diccionario.acciones'
+    _description = 'Diccionario Acciones'
+
+    codigo_accion_cuenta = fields.Integer(string='Codigo Accion Cuenta', required=True)
+    accion_cuenta = fields.Char(string='Accion Cuenta', size=60, required=True)
+
+    @api.model
+    def save_record(self, codigo_accion_cuenta, accion_cuenta):
+        return self.create({
+            'codigo_accion_cuenta': codigo_accion_cuenta,
+            'accion_cuenta': accion_cuenta
+        })
+
+
+# DiccionarioAnomalias
+class DiccionarioAnomalias(models.Model):
+    _name = 'diccionario.anomalias'
+    _description = 'Diccionario Anomalias'
+
+    codigo_tipo_anomalia = fields.Integer(string='Codigo Tipo Anomalia', required=True)
+    descripcion_tipo_anomalia = fields.Char(string='Descripcion Tipo Anomalia', size=60, required=True)
+
+    @api.model
+    def save_record(self, codigo_tipo_anomalia, descripcion_tipo_anomalia):
+        return self.create({
+            'codigo_tipo_anomalia': codigo_tipo_anomalia,
+            'descripcion_tipo_anomalia': descripcion_tipo_anomalia
+        })
+
+
+# Anomalias
+class Anomalias(models.Model):
+    _name = 'anomalias'
+    _description = 'Anomalias'
+
+    codigo_anomalia = fields.Integer(string='Codigo Anomalia', required=True)
+    codigo_tipo_anomalia = fields.Many2one('diccionario.anomalias', string='Codigo Tipo Anomalia', required=True)
+    codigo_usuario = fields.Many2one('usuarios', string='Codigo Usuario', required=True)
+    dia_ocurrencia = fields.Date(string='Dia Ocurrencia', required=True)
+    hora_ocurrencia = fields.Float(string='Hora Ocurrencia', required=True)
+
+    @api.model
+    def save_record(self, codigo_anomalia, codigo_tipo_anomalia, codigo_usuario, dia_ocurrencia, hora_ocurrencia):
+        return self.create({
+            'codigo_anomalia': codigo_anomalia,
+            'codigo_tipo_anomalia': codigo_tipo_anomalia.id,
+            'codigo_usuario': codigo_usuario.id,
+            'dia_ocurrencia': dia_ocurrencia,
+            'hora_ocurrencia': hora_ocurrencia
+        })
