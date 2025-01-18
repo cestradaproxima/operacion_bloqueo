@@ -1,0 +1,47 @@
+-- Table: ParametrosHorarioLaboral
+CREATE TABLE ParametrosHorarioLaboral (
+    codigoDiaSemana SERIAL PRIMARY KEY,
+    horaDesde TIME NOT NULL,
+    horaHasta TIME NOT NULL
+);
+
+-- Table: DiccionarioDiasSemana
+CREATE TABLE DiccionarioDiasSemana (
+    codigoDiaSemana SERIAL PRIMARY KEY,
+    descripcionDiaSemana VARCHAR(50) NOT NULL
+);
+
+-- Table: Usuarios
+CREATE TABLE Usuarios (
+    codigoUsuario SERIAL PRIMARY KEY,
+    nombreUsuario VARCHAR(50) NOT NULL,
+    contraseña VARCHAR(50) NOT NULL -- Assumes encoded passwords are stored here
+);
+
+-- Table: ParametrosCantidades
+CREATE TABLE ParametrosCantidades (
+    codigoNivel SERIAL PRIMARY KEY,
+    inicioRango FLOAT NOT NULL,
+    finalRango FLOAT NOT NULL
+);
+
+-- Table: DiccionarioNivel
+CREATE TABLE DiccionarioNivel (
+    codigoNivel SERIAL PRIMARY KEY,
+    descripcionNivel VARCHAR(60) NOT NULL,
+    mensajeNivel VARCHAR(100) NOT NULL
+);
+
+-- Table: ParametrosLogin
+CREATE TABLE ParametrosLogin (
+    numeroIntentos SERIAL PRIMARY KEY,
+    accionCuenta INT NOT NULL,
+    mensaje VARCHAR(100) NOT NULL,
+    CONSTRAINT fk_accionCuenta FOREIGN KEY (accionCuenta) REFERENCES DiccionarioAcciones(codigoAccionCuenta)
+);
+
+-- Table: DiccionarioAcciones
+CREATE TABLE DiccionarioAcciones (
+    codigoAccionCuenta SERIAL PRIMARY KEY,
+    accionCuenta VARCHAR(60) NOT NULL
+);
