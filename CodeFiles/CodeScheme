@@ -1,0 +1,136 @@
+from odoo import models, fields, api
+from datetime import datetime
+
+class SeguridadApp(models.Model):
+    _name = 'seguridad.app'
+    _description = 'Seguridad y Validaciones'
+
+    @api.model
+    def comprobar_ingreso_fuera_horario(self, dia_semana_ingreso, hora_ingreso):
+        """
+        Comprueba si el ingreso está fuera del horario laboral.
+        """
+        horarios = self.env['parametros.horario.laboral'].search([])
+        for horario in horarios:
+            if horario.codigo_dia_semana == dia_semana_ingreso:
+                if hora_ingreso < horario.hora_desde or hora_ingreso > horario.hora_hasta:
+                    return False
+        return True
+
+    @api.model
+    def comprobar_cantidad_monto(self, monto):
+        """
+        Comprueba el nivel al que pertenece un monto.
+        """
+        niveles = self.env['parametros.cantidades'].search([])
+        for nivel in niveles:
+            if monto >= nivel.inicio_rango and monto <= nivel.final_rango:
+                return nivel
+        return None
+
+    @api.model
+    def ejecutar_validaciones(self, session):
+        """
+        Ejecuta las validaciones necesarias según las reglas de seguridad.
+        """
+        # Comprobar intentos fallidos
+        if self.comprobar_numero_ingresos_fallidos(session.usuario_id):
+            # Bloquear cuenta
+            self.bloquear_cuenta(session.usuario_id)
+            # Registrar anomalía por intentos fallidos
+            self.guardar_anomalia(
+                codigo_tipo_anomalia=self.env.ref('anomalia.tipo_intentos_fallidos').id,
+                codigo_usuario=session.usuario_id.id,
+                dia_ocurrencia=datetime.now().date(),
+                hora_ocurrencia=datetime.now().time()
+            )
+
+        # Validar ingreso fuera de horario laboral
+        dia_semana = session.date.weekday() + 1  # Python: 0 (lunes) a 6 (domingo), ajustado a 1-7
+        if not self.comprobar_ingreso_fuera_horario(dia_semana, session.hour):
+            # Bloquear cuenta
+            self.bloquear_cuenta(session.usuario_id)
+            # Registrar anomalía por ingreso fuera de horario
+            self.guardar_anomalia(
+                codigo_tipo_anomalia=self.env.ref('anomalia.tipo_ingreso_fuera_horario').id,
+                codigo_usuario=session.usuario_id.id,
+                dia_ocurrencia=datetime.now().date(),
+                hora_ocurrencia=datetime.now().time()
+            )
+
+        # Validar monto
+        nivel = self.comprobar_cantidad_monto(session.monto)
+        if nivel:
+            if nivel.id == self.env.ref('nivel.anomalia_alta').id:
+                # Bloquear cuenta temporalmente
+                self.bloquear_cuenta_temporal(session.usuario_id)
+                # Registrar anomalía
+                self.guardar_anomalia(
+                    codigo_tipo_anomalia=self.env.ref('anomalia.tipo_monto_anormal_alto').id,
+                    codigo_usuario=session.usuario_id.id,
+                    dia_ocurrencia=datetime.now().date(),
+                    hora_ocurrencia=datetime.now().time()
+                )
+                return "Contacte con la entidad financiera."
+            elif nivel.id == self.env.ref('nivel.anomalia_media').id:
+                # Solicitar confirmación
+                self.solicitar_confirmacion()
+                # Registrar anomalía
+                self.guardar_anomalia(
+                    codigo_tipo_anomalia=self.env.ref('anomalia.tipo_monto_anormal_medio').id,
+                    codigo_usuario=session.usuario_id.id,
+                    dia_ocurrencia=datetime.now().date(),
+                    hora_ocurrencia=datetime.now().time()
+                )
+        else:
+            # Continuar operación
+            return "Operación exitosa."
+
+    @api.model
+    def generar_reporte(self):
+        """
+        Genera un reporte de anomalías agrupado por tipo y ordenado por nivel.
+        """
+        reporte = self.env['anomalias'].read_group(
+            domain=[],
+            fields=['codigo_tipo_anomalia', 'codigo_usuario', 'dia_ocurrencia'],
+            groupby=['codigo_tipo_anomalia'],
+            orderby='codigo_tipo_anomalia asc'
+        )
+        return reporte
+
+    @api.model
+    def guardar_anomalia(self, codigo_tipo_anomalia, codigo_usuario, dia_ocurrencia, hora_ocurrencia):
+        """
+        Guarda una anomalía en la tabla de anomalías.
+        """
+        self.env['anomalias'].create({
+            'codigo_tipo_anomalia': codigo_tipo_anomalia,
+            'codigo_usuario': codigo_usuario,
+            'dia_ocurrencia': dia_ocurrencia,
+            'hora_ocurrencia': hora_ocurrencia
+        })
+
+    @api.model
+    def bloquear_cuenta(self, usuario_id):
+        """
+        Bloquea una cuenta de usuario.
+        """
+        usuario = self.env['usuarios'].browse(usuario_id)
+        usuario.write({'estado': 'bloqueado'})
+
+    @api.model
+    def bloquear_cuenta_temporal(self, usuario_id):
+        """
+        Bloquea una cuenta temporalmente.
+        """
+        usuario = self.env['usuarios'].browse(usuario_id)
+        usuario.write({'estado': 'bloqueo_temporal'})
+
+    @api.model
+    def solicitar_confirmacion(self):
+        """
+        Solicita una confirmación adicional para continuar.
+        """
+        # Implementar la lógica de confirmación, como envío de un código
+        return "Confirmación solicitada."
